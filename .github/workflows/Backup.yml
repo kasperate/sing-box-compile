@@ -1,0 +1,32 @@
+name: Backup
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check and release
+        run: |
+            rm -fr *
+            sudo apt update
+            sudo apt install upx git tor -y
+            sudo snap install go --classic
+            git clone -b dev https://github.com/SagerNet/sing-box  sing-box> /dev/null
+            cd sing-box/cmd/sing-box
+            GOOS=linux GOARCH=amd64 go build -tags with_quic,with_grpc,with_wireguard,with_shadowsocksr,with_clash_api -trimpath -ldflags "-s -w -buildid=" -o ../../../newway
+            cd ../../../
+            upx --best newway
+            rm -rf sing-box-core
+            mkdir -p .github/workflows
+            wget -qO .github/workflows/Backup.yml https://github.com/${{ github.repository }}/raw/main/.github/workflows/Backup.yml &> /dev/null
+            git config --global init.defaultBranch main
+            git init
+            git add .
+            git config user.name "Mainians"
+            git config user.email "61817665+mainians@users.noreply.github.com"
+            git commit -m "singbox binary"
+            git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+            git push origin main --force
